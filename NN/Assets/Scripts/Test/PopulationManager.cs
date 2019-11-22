@@ -1,14 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System;
 
 public class PopulationManager : MonoBehaviour
 {
     public GameObject TankPrefab;
-    public GameObject MinePrefab;
 
     public int PopulationCount = 40;
-    public int MinesCount = 50;
 
     public Vector3 SceneHalfExtents = new Vector3 (20.0f, 0.0f, 20.0f);
 
@@ -32,9 +31,6 @@ public class PopulationManager : MonoBehaviour
     List<Tank> populationGOs = new List<Tank>();
     List<Genome> population = new List<Genome>();
     List<NeuralNetwork> brains = new List<NeuralNetwork>();
-    List<GameObject> mines = new List<GameObject>();
-    List<GameObject> goodMines = new List<GameObject>();
-    List<GameObject> badMines = new List<GameObject>();
      
     float accumTime = 0;
     bool isRunning = false;
@@ -93,6 +89,8 @@ public class PopulationManager : MonoBehaviour
         return fitness;
     }
 
+
+
     static PopulationManager instance = null;
 
     public static PopulationManager Instance
@@ -121,7 +119,6 @@ public class PopulationManager : MonoBehaviour
         genAlg = new GeneticAlgorithm(EliteCount, MutationChance, MutationRate);
 
         GenerateInitialPopulation();
-        CreateMines();
 
         isRunning = true;
     }
@@ -137,11 +134,14 @@ public class PopulationManager : MonoBehaviour
 
         generation = 0;
 
+        foreach (Tank tank in populationGOs)
+        {
+            tank.DestroyBullet();
+        }
+
         // Destroy previous tanks (if there are any)
         DestroyTanks();
 
-        // Destroy all mines
-        DestroyMines();
     }
 
     // Generate the random initial population
@@ -233,21 +233,10 @@ public class PopulationManager : MonoBehaviour
         {
             foreach (Tank t in populationGOs)
             {
-                // Get the nearest mine
-                GameObject mine = GetNearestMine(t.transform.position);
 
-                // Set the nearest mine to current tank
-                t.SetNearestMine(mine);
+                GameObject tank = GetNearestTank(t.transform.position, t);
 
-                mine = GetNearestGoodMine(t.transform.position);
-
-                // Set the nearest mine to current tank
-                t.SetGoodNearestMine(mine);
-
-                mine = GetNearestBadMine(t.transform.position);
-
-                // Set the nearest mine to current tank
-                t.SetBadNearestMine(mine);
+                t.SetNearestTank(tank);
 
                 // Think!! 
                 t.Think(dt);
@@ -289,16 +278,6 @@ public class PopulationManager : MonoBehaviour
         return t;
     }
 
-    void DestroyMines()
-    {
-        foreach (GameObject go in mines)
-            Destroy(go);
-
-        mines.Clear();
-        goodMines.Clear();
-        badMines.Clear();
-    }
-
     void DestroyTanks()
     {
         foreach (Tank go in populationGOs)
@@ -309,115 +288,40 @@ public class PopulationManager : MonoBehaviour
         brains.Clear();
     }
 
-    void CreateMines()
+    public void RelocateTank(GameObject nearTank)
     {
-        // Destroy previous created mines
-        DestroyMines();
-
-        for (int i = 0; i < MinesCount; i++)
-        {
-            Vector3 position = GetRandomPos();
-            GameObject go = Instantiate<GameObject>(MinePrefab, position, Quaternion.identity);
-
-            bool good = Random.Range(-1.0f, 1.0f) >= 0;
-
-            SetMineGood(good, go);
-
-            mines.Add(go);
-        }
-    }
-
-    void SetMineGood(bool good, GameObject go)
-    {
-        if (good)
-        {
-            go.GetComponent<Renderer>().material.color = Color.green;
-            goodMines.Add(go);
-        }
-        else
-        {
-            go.GetComponent<Renderer>().material.color = Color.red;
-            badMines.Add(go);
-        }
-
-    }
-
-    public void RelocateMine(GameObject mine)
-    {
-        if (goodMines.Contains(mine))
-            goodMines.Remove(mine);
-        else
-            badMines.Remove(mine);
-
-        bool good = Random.Range(-1.0f, 1.0f) >= 0;
-
-        SetMineGood(good, mine);
-
-        mine.transform.position = GetRandomPos();
+        nearTank.transform.position = GetRandomPos();
     }
 
     Vector3 GetRandomPos()
     {
-        return new Vector3(Random.value * SceneHalfExtents.x * 2.0f - SceneHalfExtents.x, 0.0f, Random.value * SceneHalfExtents.z * 2.0f - SceneHalfExtents.z); 
+        return new Vector3(UnityEngine.Random.value * SceneHalfExtents.x * 2.0f - SceneHalfExtents.x, 0.0f, UnityEngine.Random.value * SceneHalfExtents.z * 2.0f - SceneHalfExtents.z); 
     }
 
     Quaternion GetRandomRot()
     {
-        return Quaternion.AngleAxis(Random.value * 360.0f, Vector3.up);
+        return Quaternion.AngleAxis(UnityEngine.Random.value * 360.0f, Vector3.up);
     }
 
-    GameObject GetNearestMine(Vector3 pos)
+    GameObject GetNearestTank(Vector3 pos, Tank self)
     {
-        GameObject nearest = mines[0];
+        Tank nearest = populationGOs[0];
         float distance = (pos - nearest.transform.position).sqrMagnitude;
 
-        foreach (GameObject go in mines)
+        foreach (Tank tank in populationGOs)
         {
-            float newDist = (go.transform.position - pos).sqrMagnitude;
-            if (newDist < distance)
+            if (tank != self)
             {
-                nearest = go;
-                distance = newDist;
+                float newDist = (tank.transform.position - pos).sqrMagnitude;
+                if (newDist < distance)
+                {
+                    nearest = tank;
+                    distance = newDist;
+                }
             }
         }
 
-        return nearest;
-    }   
-
-    GameObject GetNearestGoodMine(Vector3 pos)
-    {
-        GameObject nearest = mines[0];
-        float distance = (pos - nearest.transform.position).sqrMagnitude;
-
-        foreach (GameObject go in goodMines)
-        {
-            float newDist = (go.transform.position - pos).sqrMagnitude;
-            if (newDist < distance)
-            {
-                nearest = go;
-                distance = newDist;
-            }
-        }
-
-        return nearest;
-    }   
-
-    GameObject GetNearestBadMine(Vector3 pos)
-    {
-        GameObject nearest = mines[0];
-        float distance = (pos - nearest.transform.position).sqrMagnitude;
-
-        foreach (GameObject go in badMines)
-        {
-            float newDist = (go.transform.position - pos).sqrMagnitude;
-            if (newDist < distance)
-            {
-                nearest = go;
-                distance = newDist;
-            }
-        }
-
-        return nearest;
+        return nearest.gameObject;
     }   
 
 #endregion

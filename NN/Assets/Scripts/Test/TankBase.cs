@@ -8,10 +8,9 @@ public class TankBase : MonoBehaviour
 
     protected Genome genome;
 	protected NeuralNetwork brain;
-    protected GameObject nearMine;
-    protected GameObject goodMine;
-    protected GameObject badMine;
+    protected GameObject nearTank;
     protected float[] inputs;
+    public LayerMask tankLayer;
 
     // Sets a brain to the tank
     public void SetBrain(Genome genome, NeuralNetwork brain)
@@ -22,35 +21,24 @@ public class TankBase : MonoBehaviour
         OnReset();
     }
 
-    // Used by the PopulationManager to set the closest mine
-    public void SetNearestMine(GameObject mine)
+    public void SetNearestTank(GameObject tank)
     {
-        nearMine = mine;
+        nearTank = tank;
     }
 
-    public void SetGoodNearestMine(GameObject mine)
+    protected Vector3 GetDirToTank(GameObject tank)
     {
-        goodMine = mine;
+        return (tank.transform.position - this.transform.position).normalized;
     }
 
-    public void SetBadNearestMine(GameObject mine)
+    protected bool IsCloseToTank(GameObject tank)
     {
-        badMine = mine;
+        return (this.transform.position - tank.transform.position).sqrMagnitude <= 10.0f;
     }
 
-    protected bool IsGoodMine(GameObject mine)
+    protected bool IsOnSight(GameObject tank)
     {
-        return goodMine == mine;
-    }
-
-    protected Vector3 GetDirToMine(GameObject mine)
-    {
-        return (mine.transform.position - this.transform.position).normalized;
-    }
-    
-    protected bool IsCloseToMine(GameObject mine)
-    {
-        return (this.transform.position - nearMine.transform.position).sqrMagnitude <= 2.0f;
+        return Physics.Raycast(transform.position + new Vector3(0,0.5f,0), (tank.transform.position - transform.position).normalized, 10f, tankLayer);
     }
 
     protected void SetForces(float leftForce, float rightForce, float dt)
@@ -77,12 +65,9 @@ public class TankBase : MonoBehaviour
 	{
         OnThink(dt);
 
-        if(IsCloseToMine(nearMine))
-        {
-            OnTakeMine(nearMine);
-            // Move the mine to a random position in the screen
-            PopulationManager.Instance.RelocateMine(nearMine);
-        }
+        if(IsCloseToTank(nearTank))
+            if (IsOnSight(nearTank))
+                OnTankInSight(nearTank);
 	}
 
     protected virtual void OnThink(float dt)
@@ -90,7 +75,7 @@ public class TankBase : MonoBehaviour
 
     }
 
-    protected virtual void OnTakeMine(GameObject mine)
+    protected virtual void OnTankInSight(GameObject tank)
     {
     }
 

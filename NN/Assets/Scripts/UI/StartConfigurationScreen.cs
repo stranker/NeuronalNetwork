@@ -7,8 +7,6 @@ public class StartConfigurationScreen : MonoBehaviour
 {
     public Text populationCountTxt;
     public Slider populationCountSlider;
-    public Text minesCountTxt;
-    public Slider minesCountSlider;
     public Text generationDurationTxt;
     public Slider generationDurationSlider;
     public Text eliteCountTxt;
@@ -29,7 +27,6 @@ public class StartConfigurationScreen : MonoBehaviour
     public GameObject simulationScreen;
     
     string populationText;
-    string minesText;
     string generationDurationText;
     string elitesText;
     string mutationChanceText;
@@ -42,7 +39,6 @@ public class StartConfigurationScreen : MonoBehaviour
     void Start()
     {   
         populationCountSlider.onValueChanged.AddListener(OnPopulationCountChange);
-        minesCountSlider.onValueChanged.AddListener(OnMinesCountChange);
         generationDurationSlider.onValueChanged.AddListener(OnGenerationDurationChange);
         eliteCountSlider.onValueChanged.AddListener(OnEliteCountChange);
         mutationChanceSlider.onValueChanged.AddListener(OnMutationChanceChange);
@@ -53,7 +49,6 @@ public class StartConfigurationScreen : MonoBehaviour
         sigmoidSlopeSlider.onValueChanged.AddListener(OnSigmoidSlopeChange);
 
         populationText = populationCountTxt.text;
-        minesText = minesCountTxt.text;
         generationDurationText = generationDurationTxt.text;
         elitesText = eliteCountTxt.text;
         mutationChanceText = mutationChanceTxt.text;
@@ -64,7 +59,6 @@ public class StartConfigurationScreen : MonoBehaviour
         sigmoidSlopeText = sigmoidSlopeTxt.text;
 
         populationCountSlider.value = PopulationManager.Instance.PopulationCount;
-        minesCountSlider.value = PopulationManager.Instance.MinesCount;
         generationDurationSlider.value = PopulationManager.Instance.GenerationDuration;
         eliteCountSlider.value = PopulationManager.Instance.EliteCount;
         mutationChanceSlider.value = PopulationManager.Instance.MutationChance * 100.0f;
@@ -82,13 +76,6 @@ public class StartConfigurationScreen : MonoBehaviour
         PopulationManager.Instance.PopulationCount = (int)value;
         
         populationCountTxt.text = string.Format(populationText, PopulationManager.Instance.PopulationCount);
-    }
-
-    void OnMinesCountChange(float value)
-    {
-        PopulationManager.Instance.MinesCount = (int)value;        
-
-        minesCountTxt.text = string.Format(minesText, PopulationManager.Instance.MinesCount);
     }
 
     void OnGenerationDurationChange(float value)
